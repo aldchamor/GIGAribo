@@ -1,0 +1,386 @@
+import React from 'react';
+import {
+  Image,
+  ImageBackground,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type ImageStyle,
+  type StyleProp,
+  type TextInputProps,
+  type ViewStyle,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useColors } from '@/hooks/useColors';
+import { formatPrice, type Category, type Service } from '@/constants/marketplace';
+
+const serviceImages = {
+  cleaning: require('@/assets/images/cleaning-banner.jpg'),
+  repair: require('@/assets/images/repair-service.jpg'),
+};
+
+type FeatherName = React.ComponentProps<typeof Feather>['name'];
+
+export function Page({ children, tabbed = false, style }: { children: React.ReactNode; tabbed?: boolean; style?: StyleProp<ViewStyle> }) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      style={[
+        { flex: 1, backgroundColor: colors.background, paddingTop: Platform.OS === 'web' ? 67 : insets.top, paddingBottom: Platform.OS === 'web' && !tabbed ? 34 : 0 },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+export function BrandMark({ compact = false }: { compact?: boolean }) {
+  const colors = useColors();
+  return (
+    <View style={styles.brand}>
+      <View style={[styles.brandIcon, { backgroundColor: colors.accent }]}>
+        <Feather name="home" size={compact ? 17 : 20} color={colors.primary} />
+      </View>
+      <Text style={[styles.brandName, { color: colors.navy, fontSize: compact ? 17 : 20 }]}>
+        GIGA<Text style={{ color: colors.primary }}>ribo</Text>
+      </Text>
+    </View>
+  );
+}
+
+export function ActionButton({
+  label,
+  onPress,
+  secondary = false,
+  disabled = false,
+  icon,
+  style,
+}: {
+  label: string;
+  onPress: () => void;
+  secondary?: boolean;
+  disabled?: boolean;
+  icon?: FeatherName;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        if (Platform.OS !== 'web') void Haptics.selectionAsync();
+        onPress();
+      }}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.button,
+        {
+          backgroundColor: secondary ? colors.card : colors.navy,
+          borderColor: secondary ? colors.border : colors.navy,
+          opacity: disabled ? 0.45 : pressed ? 0.84 : 1,
+        },
+        secondary && styles.buttonSecondary,
+        style,
+      ]}
+    >
+      {icon ? <Feather name={icon} size={17} color={secondary ? colors.foreground : '#FFFFFF'} /> : null}
+      <Text style={[styles.buttonText, { color: secondary ? colors.foreground : '#FFFFFF' }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+export function IconButton({
+  icon,
+  onPress,
+  color,
+  accessibilityLabel,
+  size = 20,
+}: {
+  icon: FeatherName;
+  onPress: () => void;
+  color?: string;
+  accessibilityLabel: string;
+  size?: number;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Feather name={icon} size={size} color={color ?? colors.foreground} />
+    </Pressable>
+  );
+}
+
+export function SearchField({
+  value,
+  onChangeText,
+  placeholder = 'Search services',
+  onSubmitEditing,
+  onClear,
+}: Pick<TextInputProps, 'value' | 'onChangeText' | 'onSubmitEditing'> & { placeholder?: string; onClear?: () => void }) {
+  const colors = useColors();
+  return (
+    <View style={[styles.searchField, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Feather name="search" size={18} color={colors.mutedForeground} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        onSubmitEditing={onSubmitEditing}
+        placeholder={placeholder}
+        placeholderTextColor={colors.mutedForeground}
+        returnKeyType="search"
+        style={[styles.searchInput, { color: colors.foreground }]}
+      />
+      {value && onClear ? (
+        <Pressable onPress={onClear} accessibilityRole="button" accessibilityLabel="Clear search">
+          <Feather name="x-circle" size={16} color={colors.mutedForeground} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+export function SectionHeading({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+  const colors = useColors();
+  return (
+    <View style={styles.sectionHeading}>
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{title}</Text>
+      {action && onAction ? (
+        <Pressable onPress={onAction} accessibilityRole="button">
+          <Text style={[styles.linkText, { color: colors.primary }]}>{action}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+export function CategoryTile({ category, onPress, selected = false }: { category: Category; onPress: () => void; selected?: boolean }) {
+  const colors = useColors();
+  const tone = colors[category.tone];
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.categoryTile,
+        { backgroundColor: tone, borderColor: selected ? colors.primary : colors.border, opacity: pressed ? 0.8 : 1 },
+      ]}
+    >
+      <View style={[styles.categoryIcon, { backgroundColor: colors.card }]}>
+        <Feather name={category.icon as FeatherName} size={21} color={colors.navy} />
+      </View>
+      <Text numberOfLines={2} style={[styles.categoryText, { color: colors.foreground }]}>{category.title}</Text>
+    </Pressable>
+  );
+}
+
+export function ServiceImage({
+  service,
+  style,
+  imageStyle,
+}: {
+  service: Service;
+  style?: StyleProp<ViewStyle>;
+  imageStyle?: StyleProp<ImageStyle>;
+}) {
+  return (
+    <ImageBackground
+      source={serviceImages[service.image]}
+      resizeMode="cover"
+      style={[styles.serviceImage, style]}
+      imageStyle={imageStyle}
+    />
+  );
+}
+
+export function ServiceCard({
+  service,
+  favorite,
+  onPress,
+  onToggleFavorite,
+  width = 176,
+}: {
+  service: Service;
+  favorite: boolean;
+  onPress: () => void;
+  onToggleFavorite: () => void;
+  width?: ViewStyle['width'];
+}) {
+  const colors = useColors();
+  return (
+    <View style={[styles.serviceCard, { width, backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View>
+        <Pressable accessibilityRole="button" accessibilityLabel={`View ${service.title}`} onPress={onPress}>
+          <Image source={serviceImages[service.image]} style={styles.serviceCardImage} resizeMode="cover" />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={favorite ? 'Remove from favourites' : 'Add to favourites'}
+          onPress={onToggleFavorite}
+          hitSlop={6}
+          style={[styles.heartButton, { backgroundColor: colors.card }]}
+        >
+          <Feather name="heart" size={16} color={favorite ? colors.destructive : colors.navy} />
+        </Pressable>
+      </View>
+      <Pressable accessibilityRole="button" accessibilityLabel={`View ${service.title}`} onPress={onPress} style={({ pressed }) => [styles.serviceCardBody, { opacity: pressed ? 0.8 : 1 }]}>
+        <Text numberOfLines={1} style={[styles.serviceTitle, { color: colors.foreground }]}>{service.title}</Text>
+        <Text numberOfLines={1} style={[styles.serviceSubtitle, { color: colors.mutedForeground }]}>{service.provider}</Text>
+        <View style={styles.serviceMeta}>
+          <Text style={[styles.servicePrice, { color: colors.foreground }]}>{formatPrice(service.price)}</Text>
+          <View style={styles.rating}>
+            <Feather name="star" size={12} color="#F3A64C" />
+            <Text style={[styles.ratingText, { color: colors.foreground }]}>{service.rating.toFixed(1)}</Text>
+          </View>
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
+export function ServiceRow({
+  service,
+  favorite,
+  onPress,
+  onToggleFavorite,
+}: {
+  service: Service;
+  favorite: boolean;
+  onPress: () => void;
+  onToggleFavorite: () => void;
+}) {
+  const colors = useColors();
+  return (
+    <View style={[styles.serviceRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`View ${service.title}`} onPress={onPress}>
+        <Image source={serviceImages[service.image]} style={styles.serviceRowImage} resizeMode="cover" />
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`View ${service.title}`} onPress={onPress} style={styles.serviceRowCopy}>
+        <Text numberOfLines={1} style={[styles.serviceTitle, { color: colors.foreground }]}>{service.title}</Text>
+        <Text numberOfLines={1} style={[styles.serviceSubtitle, { color: colors.mutedForeground }]}>{service.provider}</Text>
+        <View style={styles.serviceMeta}>
+          <Text style={[styles.servicePrice, { color: colors.foreground }]}>{formatPrice(service.price)}</Text>
+          <View style={styles.rating}>
+            <Feather name="star" size={12} color="#F3A64C" />
+            <Text style={[styles.ratingText, { color: colors.foreground }]}>{service.rating.toFixed(1)}</Text>
+          </View>
+        </View>
+      </Pressable>
+      <IconButton
+        icon="heart"
+        color={favorite ? colors.destructive : colors.mutedForeground}
+        onPress={onToggleFavorite}
+        accessibilityLabel={favorite ? 'Remove from favourites' : 'Add to favourites'}
+      />
+    </View>
+  );
+}
+
+export function EmptyState({
+  icon,
+  title,
+  message,
+  action,
+  onAction,
+}: {
+  icon: FeatherName;
+  title: string;
+  message: string;
+  action?: string;
+  onAction?: () => void;
+}) {
+  const colors = useColors();
+  return (
+    <View style={styles.emptyState}>
+      <View style={[styles.emptyIcon, { backgroundColor: colors.accent }]}>
+        <Feather name={icon} size={28} color={colors.primary} />
+      </View>
+      <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{title}</Text>
+      <Text style={[styles.emptyMessage, { color: colors.mutedForeground }]}>{message}</Text>
+      {action && onAction ? <ActionButton label={action} onPress={onAction} style={{ marginTop: 8 }} /> : null}
+    </View>
+  );
+}
+
+export function FormField({
+  label,
+  style,
+  ...props
+}: TextInputProps & { label: string; style?: StyleProp<ViewStyle> }) {
+  const colors = useColors();
+  return (
+    <View style={[{ gap: 7 }, style]}>
+      <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{label}</Text>
+      <TextInput
+        placeholderTextColor={colors.mutedForeground}
+        style={[styles.fieldInput, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border }]}
+        {...props}
+      />
+    </View>
+  );
+}
+
+export function HorizontalServices({ children }: { children: React.ReactNode }) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 22 }}>
+      {children}
+    </ScrollView>
+  );
+}
+
+export const uiStyles = StyleSheet.create({
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 26 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  card: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+});
+
+const styles = StyleSheet.create({
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  brandName: { fontWeight: '800', letterSpacing: -0.8 },
+  button: { minHeight: 52, borderRadius: 16, borderWidth: 1, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  buttonSecondary: { borderWidth: 1 },
+  buttonText: { fontSize: 15, fontWeight: '700' },
+  iconButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  searchField: { minHeight: 48, borderRadius: 15, borderWidth: 1, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  searchInput: { flex: 1, minWidth: 0, fontSize: 14, paddingVertical: 10 },
+  sectionHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', letterSpacing: -0.35 },
+  linkText: { fontSize: 12, fontWeight: '700' },
+  categoryTile: { width: 104, minHeight: 116, borderRadius: 18, padding: 11, alignItems: 'flex-start', justifyContent: 'space-between', borderWidth: 1 },
+  categoryIcon: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  categoryText: { fontSize: 12, fontWeight: '700', lineHeight: 16 },
+  serviceImage: { minHeight: 160, justifyContent: 'flex-end' },
+  serviceCard: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
+  serviceCardImage: { width: '100%', height: 112 },
+  heartButton: { position: 'absolute', right: 9, top: 9, width: 31, height: 31, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  serviceCardBody: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12 },
+  serviceTitle: { fontSize: 14, fontWeight: '700' },
+  serviceSubtitle: { fontSize: 11, marginTop: 3 },
+  serviceMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 9 },
+  servicePrice: { fontSize: 13, fontWeight: '800' },
+  rating: { flexDirection: 'row', gap: 3, alignItems: 'center' },
+  ratingText: { fontSize: 11, fontWeight: '600' },
+  serviceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 11, borderRadius: 18, borderWidth: 1 },
+  serviceRowImage: { width: 78, height: 78, borderRadius: 13 },
+  serviceRowCopy: { flex: 1, minWidth: 0 },
+  emptyState: { alignItems: 'center', paddingHorizontal: 30, paddingVertical: 44, gap: 10 },
+  emptyIcon: { width: 66, height: 66, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', textAlign: 'center' },
+  emptyMessage: { fontSize: 13, textAlign: 'center', lineHeight: 19, maxWidth: 260 },
+  fieldLabel: { fontSize: 12, fontWeight: '700' },
+  fieldInput: { minHeight: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 15 },
+});

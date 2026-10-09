@@ -1,0 +1,55 @@
+import React, { useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useColors } from '@/hooks/useColors';
+import { ActionButton, BrandMark, FormField, IconButton, Page } from '@/components/MarketplaceUI';
+import { useMarketplace } from '@/context/MarketplaceContext';
+import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+
+export default function LoginScreen() {
+  const colors = useColors();
+  const { profile, updateProfile } = useMarketplace();
+  const [email, setEmail] = useState(profile.email);
+  const [password, setPassword] = useState('');
+
+  function signIn() {
+    if (!email.includes('@') || password.length < 1) {
+      Alert.alert('Check your details', 'Enter a valid email and password to continue in preview mode.');
+      return;
+    }
+    updateProfile({ ...profile, name: profile.name === 'Guest' ? email.split('@')[0] : profile.name, email: email.trim() });
+    router.replace('/location');
+  }
+
+  return (
+    <Page>
+      <KeyboardAwareScrollViewCompat contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" bottomOffset={72}>
+        <IconButton icon="chevron-left" accessibilityLabel="Back" onPress={() => router.back()} />
+        <View style={styles.logo}><BrandMark /></View>
+        <Text style={[styles.title, { color: colors.foreground }]}>Welcome back</Text>
+        <Text style={[styles.copy, { color: colors.mutedForeground }]}>Sign in to pick up where you left off.</Text>
+        <FormField label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
+        <FormField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" secureTextEntry />
+        <Pressable onPress={() => Alert.alert('Password reset', 'Password recovery is not connected in this prototype.')} style={styles.forgot}>
+          <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12 }}>Forgot password?</Text>
+        </Pressable>
+        <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Preview only. No password is checked or sent to a server.</Text>
+        <ActionButton label="Sign in" onPress={signIn} />
+        <View style={styles.signup}>
+          <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Don't have an account?</Text>
+          <Pressable onPress={() => router.push('/register')}><Text style={{ color: colors.primary, fontWeight: '800', fontSize: 13 }}> Sign up</Text></Pressable>
+        </View>
+      </KeyboardAwareScrollViewCompat>
+    </Page>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: { flexGrow: 1, paddingHorizontal: 23, paddingTop: 9, paddingBottom: 24, gap: 16 },
+  logo: { alignItems: 'center', marginTop: 12, marginBottom: 8 },
+  title: { fontSize: 26, fontWeight: '800' },
+  copy: { fontSize: 13, marginTop: -10 },
+  forgot: { alignSelf: 'flex-end', marginTop: -8 },
+  disclaimer: { fontSize: 11, lineHeight: 16, marginTop: -6 },
+  signup: { flexDirection: 'row', justifyContent: 'center', marginTop: 'auto' },
+});
