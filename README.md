@@ -2,6 +2,8 @@
 
 Standalone source project for the local GIGAribo Expo demo.
 
+Website: https://gigaribo.onrender.com/
+
 ## Run locally
 
 Requirements: Node.js and npm.
